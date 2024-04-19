@@ -6,6 +6,7 @@ import os
 from PIL import Image
 import shutil
 
+st.markdown("<h1 style='text-align: center; color: white;'>Real vs. Fake Image Classification</h1>", unsafe_allow_html=True)
 
 def get_image_path(img):
     # Create a directory and save the uploaded image.
@@ -73,26 +74,31 @@ def preprocess(image) -> torch.Tensor:
   return preprocessor(image)
 
 def eval_image(image):
-    st.image(image)
+    st.columns(3)[1].image(image)
     image_path = get_image_path(image)
     image = Image.open(image_path)
     image = preprocess(image)
-    st.write(image)
+    # st.write(image)
     image = image.unsqueeze(0)
     model.eval()
+    output = None
     with torch.no_grad():
         output = model(image)
-        st.write(output)
         _, predicted = torch.max(output, 1)
-        st.write(predicted)
+        output = predicted
     shutil.rmtree("data")
+    return output
 
 model = CustModel()
-model.load_state_dict(torch.load("reallygoodteamname.pt"))
+model.load_state_dict(torch.load("rvf_cnn.pt", map_location=torch.device('cpu')))
 
 image = st.file_uploader("Upload your image here...", type=['png', 'jpeg', 'jpg'])
 
 if image is not None:
-    eval_image(image)
+    label = eval_image(image)[0] # 0 for fake, 1 for real
+    if label == 1:
+        st.markdown("<h2 style='text-align: center; color: white;'>Real!</h2>", unsafe_allow_html=True)
+    else:
+        st.markdown("<h2 style='text-align: center; color: white;'>Fake!</h2>", unsafe_allow_html=True)
 
-# criterion = torch.nn.CrossEntropyLoss()
+
